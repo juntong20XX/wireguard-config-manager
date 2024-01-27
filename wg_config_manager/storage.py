@@ -48,7 +48,7 @@ def get_parser_from_config() -> ConfigParser:
             parser.write(fp)
     else:
         with open(PathMap.CONFIG_FILE, "r", encoding="utf-8") as fp:
-            parser.read(fp)
+            parser.read_file(fp)
 
     return parser
 

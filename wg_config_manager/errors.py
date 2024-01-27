@@ -7,17 +7,37 @@ class WG_CONFIG_MANAGER_BASE_EXCEPION(Exception):
     Base exception for `wg_config_manager` package.
     """
 
-class ConfigParseFailException(WG_CONFIG_MANAGER_BASE_EXCEPION):
+
+# --- IO
+
+class EncryptionError(WG_CONFIG_MANAGER_BASE_EXCEPION):
+    """
+    Encrypt failed.
+    """
+
+class ConfigParseError(WG_CONFIG_MANAGER_BASE_EXCEPION):
     """
     Parse config failed.
     """
 
 
-class PluginLoadingException(WG_CONFIG_MANAGER_BASE_EXCEPION):
+# --- Plugin
+
+class PluginException(WG_CONFIG_MANAGER_BASE_EXCEPION):
     """
-    The exception raised when loading plugin failed.
+    An error occurred with loading or executing plugin.
     """
 
+
+class PluginLoadingError(PluginException):
+    """
+    Exception occured when loading plugin failed.
+    """
+
+class PluginRuntimeError(PluginException):
+    """
+    Exception occured when executing a plugin.
+    """
 
 # ---
-errors = (ConfigParseFailException, PluginLoadingException)
+errors = (ConfigParseError, PluginLoadingError, PluginRuntimeError, EncryptionError)

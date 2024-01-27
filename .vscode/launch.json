@@ -19,6 +19,14 @@
             "program": "test/test_semver.py",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "test enc plugin",
+            "type": "python",
+            "request": "launch",
+            "program": "test/test_encrypt_plugin.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

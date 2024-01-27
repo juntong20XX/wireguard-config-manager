@@ -3,7 +3,7 @@ Test functions and methods in load_plugin about Semantic Versioning 2.0.0.
 """
 from wg_config_manager.load_plugin import check_version_req_format, semver_lg, check_version_is_req
 from wg_config_manager.load_plugin import _RE_GET_VERSION as re_semver
-from wg_config_manager.errors import ConfigParseFailException
+from wg_config_manager.errors import ConfigParseError
 
 import unittest
 
@@ -19,7 +19,7 @@ class TestSemver(unittest.TestCase):
         """
         test load_plugin.check_version_req_format
         """ 
-        with self.assertRaises(ConfigParseFailException):
+        with self.assertRaises(ConfigParseError):
             check_version_req_format("v0.1.0")
             check_version_req_format("0.1.a")
         self.assertEqual(
