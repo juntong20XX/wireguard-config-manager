@@ -41,7 +41,7 @@ def load_plugins(parser: ConfigParser) -> dict[str]:
     """
     load plugins from config
     """
-    plugins = {}
+    plugins: dict[str, LoadPluginModule] = {}
     # read config to get `path`
     if d := parser.get("Extension"):
         path = d.get("path", "")
@@ -50,9 +50,9 @@ def load_plugins(parser: ConfigParser) -> dict[str]:
         plugins[name] = load_plugin(path, name)
     return plugins
 
-def load_plugin(path:str, name: str, /, lock=Lock()) -> types.ModuleType:
+def load_plugin_module(path:str, name: str, /, lock=Lock()) -> types.ModuleType:
     """
-    load plugin
+    load plugin, then return the module
 
     :param path: the value of [Extension.path] in config.
     """
@@ -66,6 +66,15 @@ def load_plugin(path:str, name: str, /, lock=Lock()) -> types.ModuleType:
     finally:
         lock.release()
     return module
+
+
+def load_plugin(path: str, name: str):
+    """
+    lead plugin
+
+    :return: LoadPluginModule
+    """
+    return LoadPluginModule(load_plugin_module(path, name))
 
 
 @dataclass
