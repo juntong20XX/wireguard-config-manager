@@ -13,18 +13,37 @@ Call `python -m wg_config_manager` to start GUI.
 
 Then config file is at `${home}/.config/wg_config_manager/config.ini`.
 
-## About Extension
+## Document
+
+### version
+
+Get the version string by `version.VERSION`.
+
+The version is following [Semantic Versioning  2.0.0](https://semver.org/spec/v2.0.0.html).
+
+## Develop an Extension
 
 ### Keywords:
 
-| name                  | usage                                                |
-| --------------------- | ---------------------------------------------------- |
-| `ENCRYPT_TYPE_{NAME}` | Add an encryption method.                            |
-| `VPN_TYPE_{NAME}`     | Add an type of VPN. See "How to add a new VPN type". |
+| name                  | type   | usage                                                |
+| --------------------- | ------ | ---------------------------------------------------- |
+| `VERSION`             | `str`  | Version requirements.                                |
+| `ENCRYPT_TYPE_{NAME}` | `dict` | Add an encryption method.                            |
+| `VPN_TYPE_{NAME}`     |        | Add an type of VPN. See "How to add a new VPN type". |
 
-### How to add a new encrypt type
+### Declare Version Requirements
 
-The encrypt type is statement by `ENCRYPT_TYPE_*`. This variable should point to a list containing encryption, decryption methods and required keywords.
+Plugins use `VERSION_REQ` to set version requirement.
+
+Use `>=`,`<=`, `!=`, or`==` before target version to describe version requirement logic, and use commas (with optional spaces) to connect other expressions.
+
+For example, `VERSION_REQ = ">0.0.1, !=0.1.0-alpha"` means the version should lager than `0.0.1` and shouldn't be `0.1.0-alpha`.
+
+You can use `load_plugin.check_version_format` to check the format is correct or not.
+
+### Declare an Encrypt Type
+
+The encrypt type is statement by `ENCRYPT_TYPE_{NAME}`. This variable should point to a list containing encryption, decryption methods and required keywords.
 
 Here are the steps to add a new encrypt type:
 
@@ -59,7 +78,7 @@ Here are the steps to add a new encrypt type:
                        "decrypt": [xor_file, paramaters.copy()]}
    ```
 
-### How to add a new VPN type
+### Declare a VPN Type
 
 ### Format Mapping for Plugin
 

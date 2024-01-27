@@ -1,7 +1,7 @@
 """
 The ui based on tkinter.
 """
-from .storage import EncryptIO, load_config, dump_config
+from .storage import EncryptIO, get_parser_from_config, dump_parser_to_config
 
 import tkinter as tk
 
@@ -14,7 +14,7 @@ class EncryptFrame(tk.Frame):
         """
         """
         # NOTE: Through read once when load ui, thread safety is guaranteed to a certain extent.
-        config = load_config()
+        config = get_parser_from_config()
 
         # setup widgets
         # -- Encrypt Options

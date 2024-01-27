@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wg_config_manager"
+version = "0.0.1-alpha"
+authors = [
+  { name="juntong20XX", email="juntong_2021@outlook.com" },
+]
+description = "My wireguard config manager. Provide GUI to generate configurations for different devices. Support WireGuard and VLess."
+readme = "README.md"
+# requires-python = ">=3.8"  # TODO
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    # "Operating System :: Windows",
+]
+
+[project.urls]
+Homepage = "https://github.com/juntong20XX/wireguard-config-manager"
+Issues = "https://github.com/juntong20XX/wireguard-config-manager/issues"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/wg_config_manager",
+]
+exclude = [
+]
+
+[tool.hatch.build]
+dev-mode-dirs = ["."]
