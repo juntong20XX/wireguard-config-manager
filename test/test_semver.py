@@ -11,14 +11,16 @@ import unittest
 def semver_format(version: str):
     return re_semver.match(version).groups()
 
+
 class TestSemver(unittest.TestCase):
     """
     test semver
     """
+
     def test_check_version_req_format(self):
         """
         test load_plugin.check_version_req_format
-        """ 
+        """
         with self.assertRaises(ConfigParseError):
             check_version_req_format("v0.1.0")
             check_version_req_format("0.1.a")
@@ -31,6 +33,7 @@ class TestSemver(unittest.TestCase):
             [(">=", "0", "1", "0", None, None),
              ("<=", "1", "0", "0", "beta", "exp.sha.5114f85")]
         )
+
     def test_semver_lg(self):
         """
         test load_plugin.semver_lg
@@ -44,7 +47,7 @@ class TestSemver(unittest.TestCase):
                                    semver_format("1.0.0-beta.11")))
         self.assertFalse(semver_lg(semver_format("1.0.0-alpha.1"),
                                    semver_format("1.0.0-alpha.beta")))
-    
+
     def test_check_version_is_req(self):
         """
         test `load_plugin.check_version_is_req`
@@ -52,9 +55,11 @@ class TestSemver(unittest.TestCase):
         self.assertFalse(check_version_is_req(("<=", "1", "0", "0", "beta", "hello"),  # 1.0.0-beta+hello < 1.0.0
                                               "1.0.0"))
         self.assertTrue(check_version_is_req(("==", "1", "0", "0", None, "hello"),  # 1.0.0+hello == 1.0.0
-                                              "1.0.0"))
-        self.assertTrue(check_version_is_req(("<=", "1", "0", "0", "beta", "exp.sha.5114f85"),  # 1.0.0-beta+exp.sha.5114f85 >= 0.0.1 
-                                              "0.0.1"))
+                                             "1.0.0"))
+        self.assertTrue(check_version_is_req(("<=", "1", "0", "0", "beta", "exp.sha.5114f85"),
+                                             # 1.0.0-beta+exp.sha.5114f85 >= 0.0.1
+                                             "0.0.1"))
+
 
 if __name__ == "__main__":
     unittest.main()

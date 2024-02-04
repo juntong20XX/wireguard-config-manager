@@ -16,11 +16,10 @@ from configparser import ConfigParser
 from dataclasses import dataclass, asdict
 from .storage import get_parser_from_config
 
-
 MINIMUM_PLUGIN_VARIABLES = {"VERSION_REQ"}
 
 
-def get_plugins(parser: ConfigParser) -> tuple[str]:
+def get_plugins(parser: ConfigParser) -> list[str]:
     """
     get the plugin-list to be loading
 
@@ -29,11 +28,11 @@ def get_plugins(parser: ConfigParser) -> tuple[str]:
     [Extension]
     plugins = "bar", "foo"
     ```
-    ==> ("bar", "foo")
+    ==> ["bar", "foo"]
     """
     m = re.findall(r"['\"](.+?)['\"] *,? *", parser["Extension"]["plugins"])
     return m
-    
+
     # raise ConfigParseFailException("failed to get plugin-list, check your config file")
 
 
@@ -43,18 +42,23 @@ def load_plugins(parser: ConfigParser) -> dict[str]:
     """
     plugins: dict[str, LoadPluginModule] = {}
     # read config to get `path`
-    if d := parser.get("Extension"):
+    if d := parser["Extension"]:
         path = d.get("path", "")
+    else:
+        path = ""
     # load modules
     for name in get_plugins(parser):
         plugins[name] = load_plugin(path, name)
     return plugins
 
-def load_plugin_module(path:str, name: str, /, lock=Lock()) -> types.ModuleType:
+
+def load_plugin_module(path: str, name: str, /, lock=Lock()) -> types.ModuleType:
     """
     load plugin, then return the module
 
+    :param name: name of plugin
     :param path: the value of [Extension.path] in config.
+    :param lock: the lock when modify sys.path.
     """
     path = path.format_map(PathMap)
     path = os.path.expanduser(path)
@@ -95,6 +99,7 @@ class AcquireValue:
     If `FunctionParameter.default` is instance of this class, 
     the value of default will be replaced with `mapping[arg]`.
     """
+
     def __init__(self, keyword: str):
         self.keyword = keyword
 
@@ -106,6 +111,8 @@ _RE_GET_VERSION = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
                              r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*"
                              r")(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
                              r"(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$")
+
+
 def check_version_req_format(version_req: str) -> list[tuple[str | None]]:
     """
     Check version-requirement's format.
@@ -144,7 +151,7 @@ def semver_lg(version: typing.Iterable[str], other: typing.Iterable[str]) -> boo
         return int(b) > int(y)
     if c != z:
         return int(c) > int(z)
-    
+
     if p is None:
         return q is not None  # 0.1.0 > 0.1.0-alpha
     elif q is None:  # here, p is not None
@@ -167,13 +174,13 @@ def semver_lg(version: typing.Iterable[str], other: typing.Iterable[str]) -> boo
             for u, v in zip(i, j):
                 if u != v:
                     return ord(u) > ord(v)  # 0.1.0-b > 0.1.0-a
-            return len(u) > len(v)  # 0.1.0-alpha > 0.1.0-a
-    # if all of the preceding identifiers are equal
+            return len(i) > len(j)  # 0.1.0-alpha > 0.1.0-a
+    # if all the preceding identifiers are equal
     # a larger set of pre-release fields has a higher precedence than a smaller set
     return len(m) > len(n)
 
 
-def check_version_is_req(version_exp:typing.Iterable[str], version: str | tuple) -> bool:
+def check_version_is_req(version_exp: typing.Iterable[str], version: str | tuple) -> bool:
     """
     Check `version` requires `version_exp` or not.
 
@@ -190,7 +197,7 @@ def check_version_is_req(version_exp:typing.Iterable[str], version: str | tuple)
         return ver_exp != ver
     elif log == "==":
         return ver_exp == ver
-    
+
     if log.endswith("=") and ver_exp == ver:
         return True
     if log.startswith(">"):
@@ -201,8 +208,9 @@ def check_version_is_req(version_exp:typing.Iterable[str], version: str | tuple)
         return not semver_lg(ver, ver_exp)
 
     raise ConfigParseError(
-        f"unkown logic symble `{log}` in `{version_exp}`, "
+        f"unknown logic symbol `{log}` in `{version_exp}`, "
         "use `load_plugin.check_version_req_format` to check it")
+
 
 def check_version_is_req_list(version_exp_list: typing.Iterable, version: str) -> bool:
     """
@@ -217,6 +225,8 @@ def check_version_is_req_list(version_exp_list: typing.Iterable, version: str) -
 
 
 _RE_GET_ENCRYPT_NAME = re.compile(r"^ENCRYPT_TYPE_(.+)$")
+
+
 def function_check_encrypt_type(plugin: types.ModuleType) -> dict[str, dict]:
     """
     Return the "name"-"data" mapping.
@@ -237,7 +247,7 @@ def function_check_encrypt_type(plugin: types.ModuleType) -> dict[str, dict]:
     return ret
 
 
-def check_minimum_plugin_varbs(plugin:types.ModuleType):
+def check_minimum_plugin_varbs(plugin: types.ModuleType):
     """
     check MINIMUM_PLUGIN_VARIABLES is satisfied or not
     """
@@ -246,7 +256,7 @@ def check_minimum_plugin_varbs(plugin:types.ModuleType):
 
 def auto_execute_function(execute: typing.Callable, descriptions: list,
                           keyword_arguments: dict[str, typing.Any],
-                          format_mapping = None) -> typing.Any:
+                          format_mapping=None) -> typing.Any:
     """
     TODO
     """
@@ -295,7 +305,8 @@ class LoadPluginModule:
     """
     The core functions to load plugin from moudle.
     """
-    def __init__(self, plugin_module:types.ModuleType,
+
+    def __init__(self, plugin_module: types.ModuleType,
                  parser: ConfigParser | None = None, version=None):
         """
         set up values
@@ -315,11 +326,12 @@ class LoadPluginModule:
             self.VERSION = VERSION
         # cache
         self._encrypt_functions = None
+
     def check_plugin_version_req(self):
         """
         Check whether the plugin version requirements are satisfied.
         
-        To check requirements are satisfaced with functions:
+        To check requirements are satisfied with functions:
         ```python
         assert (check_version_is_req_list(check_version_req_format(plugin_version_req),
                                           version.VERSION),
@@ -334,6 +346,7 @@ class LoadPluginModule:
                 raise PluginLoadingError(
                     f"current version `f{self.VERSION}`"
                     f"doesn't satisfied the requirements `{req}`")
+
     def get_encrypt_types(self) -> dict[str, dict]:
         """
         Return the "name"-"data" mapping.
@@ -343,12 +356,13 @@ class LoadPluginModule:
         # no cached
         self._encrypt_functions = function_check_encrypt_type(self.plugin_module)
         return self._encrypt_functions
+
     def get_decrypt_types(self) -> dict[str, dict]:
         """
         same as `get_encrypt_types`
         """
         return self.get_encrypt_types()
-    
+
     def get_from_config(self, key, default_value=None):
         """
         get the value of `key` from config
@@ -358,11 +372,12 @@ class LoadPluginModule:
         else:
             parser = self.parser
         return parser[key] if key in parser.sections() else default_value
-    
+
     def exec_encrypt(self, name, data: bytes, **kwargs) -> bytes:
         """
         auto execute encrypt function
 
+        :param name: name of encrypt
         :param data: the value of keyword `TARGET DATA` pass to format mapping.
         :raise: ValueError
         :raise: PluginRuntimeError
@@ -373,11 +388,12 @@ class LoadPluginModule:
         mapping.update(asdict(PathMap))
         mapping.update(self.get_from_config(self.plugin_name, {}))
         return auto_execute_function(exe, dec, kwargs, mapping)
-    
+
     def exec_decrypt(self, name, data: bytes, **kwargs) -> bytes:
         """
         auto execute decrypt function
 
+        :param name: name of decrypt
         :param data: the value of keyword `TARGET DATA` pass to format mapping.
         :raise: ValueError
         :raise: PluginRuntimeError
@@ -390,9 +406,9 @@ class LoadPluginModule:
         return auto_execute_function(exe, dec, kwargs, mapping)
 
 
-def exec_plugin_moude(plugin: types.ModuleType):
+def exec_plugin_module(plugin: types.ModuleType):
     """
     
     """
-    
-    return #TODO
+
+    return  # TODO

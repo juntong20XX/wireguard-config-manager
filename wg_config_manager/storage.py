@@ -5,7 +5,6 @@ from pathlib import Path
 from dataclasses import dataclass
 from configparser import ConfigParser
 
-
 __APP_DIR = Path(__file__).parent
 DEFAULT_CONFIG_PATH = __APP_DIR / "default config.ini"
 __CONFIG_DIR = Path.home() / ".config" / "wg_config_manager"
@@ -20,15 +19,16 @@ class PathMap:
     APP_DIR: Path
     CONFIG_DIR: Path
     CONFIG_FILE: Path
-    
+
     def __getitem__(self, item):
         return getattr(self, item)
 
+
 PathMap = PathMap(
-    APP_DIR = __APP_DIR,
+    APP_DIR=__APP_DIR,
     # DEFAULT_CONFIG = str(DEFAULT_CONFIG_PATH),
-    CONFIG_DIR = __CONFIG_DIR,
-    CONFIG_FILE = __CONFIG_FILE
+    CONFIG_DIR=__CONFIG_DIR,
+    CONFIG_FILE=__CONFIG_FILE
 )
 
 
@@ -52,12 +52,14 @@ def get_parser_from_config() -> ConfigParser:
 
     return parser
 
-def dump_parser_to_config(parser:ConfigParser, path=str(DEFAULT_CONFIG_PATH)):
+
+def dump_parser_to_config(parser: ConfigParser, path=str(DEFAULT_CONFIG_PATH)):
     """
     Write config to file by parser.
     """
     with open(path, "w", encoding="utf-8") as fp:
         parser.write(fp)
+
 
 if __name__ == "__main__":
     get_parser_from_config()

@@ -12,19 +12,22 @@ class TestLoadEncryptPlugin(TestCase):
         self.config_exist = lp.PathMap.CONFIG_FILE.is_file()
         self.loader = lp.load_plugin("{APP_DIR}", "gpg")
         self.encrypt_functions = self.loader.get_encrypt_types()
+
     def test_get_encrypt_functions(self):
         """
         try to get and exec encrypt function(s) in plugin `gpg`
         """
         self.assertListEqual(list(self.encrypt_functions), ["GnuPG"])
+
     def test_gpg_encrypt_gnupg(self):
         """
         test GnuPG encrypt and decrypt functions in plugin gpg
         """
-        text_byte = b"some disvaluable text"
+        text_byte = b"some invaluable text"
         b = self.loader.exec_encrypt("GnuPG", text_byte)
         bb = self.loader.exec_decrypt("GnuPG", b)
         self.assertEqual(text_byte, bb)
+
     def tearDown(self) -> None:
         if not self.config_exist:
             os.remove(lp.PathMap.CONFIG_FILE)

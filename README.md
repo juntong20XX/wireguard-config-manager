@@ -74,29 +74,32 @@ Here are the steps to add a new encrypt type:
                        "decrypt": [xor_callback, parameters.copy()]}
    ```
 
-4. Advantage:
 
-   - To disable the type extension by set bool key `disable`,like:
+Advantage:
 
-     ```python
-     ENCRYPT_TYPE_XXX = {"encrypt": ...,
-                         "disable": True}
-     ```
+- To disable the type extension by set bool key `disable`,like:
 
-     then plugin loader will skip the extension.
+  ```python
+  ENCRYPT_TYPE_XXX = {"encrypt": ...,
+                      "disable": True}
+  ```
 
-   - To add help text or document, set key `helper`:
+  then plugin loader will skip the extension.
 
-     ```python
-     ENCRYPT_TYPE_XXX = {"encrypt": ...,
-                         "helper": "<text>"}
-     ```
+- To add help text or document, set key `helper`:
 
-     the text can be display in UI and console.
+  ```python
+  ENCRYPT_TYPE_XXX = {"encrypt": ...,
+                      "helper": "<text>"}
+  ```
 
-   - 
+  the text can be display in UI and console.
+
+- 
 
 ### Declare a VPN Type
+
+TODO
 
 ### Format Mapping for Plugin
 
@@ -109,7 +112,7 @@ Here are the steps to add a new encrypt type:
 
 ## Document
 
-### load_plugin(Part 1): Plugin Development Utility:
+### load_plugin(Part 1): Plugin Development Utility
 
 #### `FunctionParameters`:
 
@@ -144,6 +147,17 @@ Get the version string by `version.VERSION`.
 
 The version is following [Semantic Versioning  2.0.0](https://semver.org/spec/v2.0.0.html).
 
-### MODEL: storage
+### wireguard_core
 
-### MODEL: load_plugin
+This module provides functions for wireguard options.
+
+A config for is like:
+
+```ini
+[pc-1]
+private key=
+public key =
+persistent keep alive=
+public key is auto generated = False
+```
+
