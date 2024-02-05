@@ -4,6 +4,7 @@ This file contains the code to load the plugin and describe the plugin.
 from .storage import PathMap
 from .errors import (ConfigParseError, PluginLoadingError,
                      EncryptionError, PluginRuntimeError)
+from .storage import get_parser_from_config
 
 import os
 import re
@@ -14,7 +15,6 @@ import importlib
 from threading import Lock
 from configparser import ConfigParser
 from dataclasses import dataclass, asdict
-from .storage import get_parser_from_config
 
 MINIMUM_PLUGIN_VARIABLES = {"VERSION_REQ"}
 

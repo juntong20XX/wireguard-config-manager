@@ -3,13 +3,16 @@ WireGuard Functions
 """
 import re
 import typing
-from configparser import ConfigParser
 from subprocess import run
+from configparser import ConfigParser
 
-from .errors import ConfigParseError, WireguardConfError
+from .logger import Logger
 from .storage import get_parser_from_config
+from .errors import ConfigParseError, WireguardConfError
 
 RESERVED_KEYS = set()
+
+logger = Logger(__name__)
 
 
 def gen_private_key(wg_path: typing.Optional[str] = None) -> str:
@@ -76,7 +79,8 @@ RE_IPV6 = re.compile(
 RE_IPS = re.compile(r"^([\d.:a-fA-F/])(:? *, *)?$")
 
 
-def get_peer_config(device: str, config: ConfigParser, annotation: typing.Optional[str] = None) -> str:
+def get_peer_config(device: str, config: ConfigParser, interface_name: typing.Optional[str] = None,
+                    annotation: typing.Optional[str] = None) -> str:
     """
     get a peer config from wireguard_core config
     """
@@ -92,7 +96,7 @@ def get_peer_config(device: str, config: ConfigParser, annotation: typing.Option
         # try to generate public key from private key
         private_key = config.get(device, "private key")
         if private_key is None:
-            raise WireguardConfError(f"cannot get or generate the private key for `{device}`")
+            raise WireguardConfError(f"cannot get or generate the public key for `{device}`")
         # update information after generate
         public_key = gen_public_key(private_key)
         config.set(device, "public key", public_key)
@@ -114,6 +118,11 @@ def get_peer_config(device: str, config: ConfigParser, annotation: typing.Option
     endpoint = config.get(device, "endpoint")
     if endpoint:
         s.append(f"Endpoint = {endpoint}")
+    # PresharedKey
+    if interface_name:
+        pk = config.get(device, f"pre-shared key[{interface_name}]")
+        if pk:
+            s.append("PresharedKey = {pk}")
     # PersistentKeepalive
     pka = config.get(device, "persistent keep alive")
     if pka:
@@ -131,9 +140,47 @@ def get_interface_config(device: str, config: ConfigParser, annotation: typing.O
     :param annotation:
     :return:
     """
-    raise NotImplemented
+    s = ["[Interface]"]
+    # annotation
+    if annotation:
+        if not annotation.startswith("#"):
+            annotation = f"# {annotation}"
+        s.append(annotation)
+
+    # PrivateKey
+    private_key = config.get(device, "private key")
+    if private_key is None:
+        raise WireguardConfError(f"private key not found")
+    s.append(f"PrivateKey = {private_key}")
+    # Address
+    address = config.get(device, "address")
+    if not address:
+        raise WireguardConfError(f'cannot get interface `address` for "{device}"')
+    # --- check ip
+    for ip in RE_IPS.findall(address):
+        if not RE_IPV4.match(ip) or not RE_IPV6.match(ip):
+            raise WireguardConfError("please check ipaddress", ip)
+    s.append(f"address = {address}")
+    # ListenPort
+    lp = config.get(device, "listen port")
+    if lp:
+        if not lp.isnumeric():
+            raise WireguardConfError('"ListenPort" should be numeric, get', lp)
+        s.append(f"ListenPort = {lp}")
+    # MTU
+    mtu = config.get(device, "listen port")
+    if mtu:
+        if not mtu.isnumeric():
+            raise WireguardConfError('"MTU" should be numeric, get', mtu)
+        s.append(f"MTU = {mtu}")
+    # DNS
+    dns = config.get(device, "listen port")
+    if dns:
+        s.append(f"dns = {dns}")
+    return "\n".join(s)
 
 
+@logger.important_function()
 def get_config_for(device: str, config: ConfigParser, peer_devices=typing.Optional[list[str]]) -> str:
     """
     get the config for `name`
@@ -152,7 +199,7 @@ def get_config_for(device: str, config: ConfigParser, peer_devices=typing.Option
         peer_devices = set(config.sections()) - RESERVED_KEYS
         peer_devices.remove(device)
     for device_name in peer_devices:
-        s.append(get_peer_config(device_name, config, annotation=device_name))
+        s.append(get_peer_config(device_name, config, interface_name=device, annotation=device_name))
     return "\n".join(s)
 
 

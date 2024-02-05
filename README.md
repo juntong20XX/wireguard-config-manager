@@ -159,5 +159,11 @@ private key=
 public key =
 persistent keep alive=
 public key is auto generated = False
+pre-shared key[pc-2] =
+address = 
+listen port =
+post up =
+post down =
+MTU =
 ```
 
