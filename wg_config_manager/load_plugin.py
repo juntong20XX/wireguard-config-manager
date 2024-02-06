@@ -1,6 +1,7 @@
 """
 This file contains the code to load the plugin and describe the plugin.
 """
+from .logger import Logger
 from .storage import PathMap
 from .errors import (ConfigParseError, PluginLoadingError,
                      EncryptionError, PluginRuntimeError)
@@ -17,6 +18,7 @@ from configparser import ConfigParser
 from dataclasses import dataclass, asdict
 
 MINIMUM_PLUGIN_VARIABLES = {"VERSION_REQ"}
+logger = Logger(__name__)
 
 
 def get_plugins(parser: ConfigParser) -> list[str]:
@@ -72,6 +74,7 @@ def load_plugin_module(path: str, name: str, /, lock=Lock()) -> types.ModuleType
     return module
 
 
+@logger.important_function(print_parameters=["name"])
 def load_plugin(path: str, name: str):
     """
     lead plugin

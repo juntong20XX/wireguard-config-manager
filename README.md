@@ -1,6 +1,8 @@
 # wireguard-config-manager
 My wireguard config manager. Provide GUI to generate configurations for different devices. Support Wireguard and Vless.
 
+The main direction of traditional VPN is to be fast or easy to distribute and manage, without considering how to hide the traffic. At the same time, many schools or businesses use firewalls to block most VPN connections. But - we may just want to connect to the NAS at home through Wireguard to synchronize our school homework files. Under the premise that we are clear about what we are doing and can bear the consequences, we can try to use a proxy with obfuscation - such as VLess development by v2fly. Through this agent, you almost never need to modify the Wireguard configuration, and this project can manage the configuration more conveniently.
+
 **<font color="red">Warning, the project is still under development and no actual functionality has been completed yet.</font>**
 
 ## Install
@@ -93,9 +95,9 @@ Advantage:
                       "helper": "<text>"}
   ```
 
-  the text can be display in UI and console.
+  the text can be display in UI and console. **<font color="red">TODO</font>**
 
-- 
+- Use `logger.Logger` to set logs.
 
 ### Declare a VPN Type
 
