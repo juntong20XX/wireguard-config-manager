@@ -64,11 +64,11 @@ def load_plugin_module(path: str, name: str) -> types.ModuleType:
     :param path: the value of [Extension.path] in config.
     """
     path = path.format_map(PathMap)
-    path = os.path.expanduser(path)
+    path = Path(os.path.expanduser(path))
 
     # https://docs.python.org/zh-cn/3/library/importlib.html#importing-a-source-file-directly
-    file_path = Path(path) / f"{name}.py"
-    module_name = name
+    file_path = path / f"{name}.py"
+    module_name = f"{path.name}.{name}"
 
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     module = importlib.util.module_from_spec(spec)
