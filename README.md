@@ -15,6 +15,21 @@ Call `python -m wg_config_manager` to start GUI.
 
 Then config file is at `${home}/.config/wg_config_manager/config.ini`.
 
+### Load a plugin
+
+Open the config file at `${home}/.config/wg_config_manager/config.ini`. If file not exist, run `python -m wg_config_manager` and close it to generate it.
+
+In config.ini file, you can find `plugins = "v2ray"` in `[Extension]` part. Add your new plugin after that keyword, by using a comma (`,`) and using quotes around the plugin name, like `, "YOUR PLUGIN"`.
+
+Optional, you can set the plugin path by adding a key `plugin_dir-{YOUR PLUGIN}` , and the default paths `{CONFIG_DIR}/{PLUGIN NAME}`. Note that the value of `plugin dir` should be a dictionary, app will load `{plugin_dir}/{PLUGIN NAME}.py`. For example, you download a plugin named `plg`, and the plugin file `plg.py` is located at `~/.loacl/share/wgm/plg.py`, the path value be: `~/.loacl/share/wgm`.
+
+```ini
+[Extension]
+plugin_dir-v2ray = {APP_DIR}/v2ray
+plugin_dir-plg = ~/.loacl/share/wgm
+plugins = "v2ray", "plg"
+```
+
 ## Develop an Extension
 
 ### Keywords:
@@ -111,6 +126,8 @@ TODO
 | `CONFIG_DIR`  | The path where the configuration is located.  |
 | `CONFIG_FILE` | The path to configuration file `config.ini` . |
 | `DATA_FILE`   | The path to current data storage file.        |
+
+Note: You can check (even change) the values at `wg_config_manager.storage.PathMap`.
 
 ## Document
 

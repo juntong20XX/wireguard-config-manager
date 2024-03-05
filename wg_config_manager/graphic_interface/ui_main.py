@@ -1,7 +1,7 @@
 """
 The ui based on tkinter.
 """
-from .storage import EncryptIO, get_parser_from_config, dump_parser_to_config
+from wg_config_manager.storage import get_parser_from_config, dump_parser_to_config
 
 import tkinter as tk
 
@@ -10,6 +10,8 @@ class EncryptFrame(tk.Frame):
     """
     About the Encrypt.
     """
+    config_gpg_path: tk.Entry
+
     def setup_ui(self):
         """
         """
@@ -20,7 +22,8 @@ class EncryptFrame(tk.Frame):
         # -- Encrypt Options
         # TODO
         # -- GnuPG path
-        self.config_gpg_path = tk.Entry(self, text=config["GnuPG"])
+        self.config_gpg_path = tk.Entry(self)
+        self.config_gpg_path["text"] = config.get("GnuPG", "path")
 
         # setup layout
         self.config_gpg_path.pack()
@@ -31,7 +34,7 @@ def mainloop():
     Run tkinter GUI mainloop.
     """
     window = tk.Tk()
-    
+
     encrypt_frame = EncryptFrame(window)
     encrypt_frame.setup_ui()
     encrypt_frame.pack()

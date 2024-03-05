@@ -1,5 +1,5 @@
 """
-Storage management.
+Storage management, like config loader.
 """
 from pathlib import Path
 from dataclasses import dataclass

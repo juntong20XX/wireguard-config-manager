@@ -3,8 +3,8 @@ This file contains the code to load the plugin and describe the plugin.
 """
 from .logger import Logger
 from .storage import PathMap
-from .errors import (ConfigParseError, PluginLoadingError,
-                     EncryptionError, PluginRuntimeError)
+from .errors import (ConfigParseError, PluginLoadingError,  # EncryptionError,
+                     PluginRuntimeError)
 from .storage import get_parser_from_config
 
 import os
@@ -13,7 +13,8 @@ import sys
 import types
 import typing
 import importlib
-from threading import Lock
+import importlib.util
+from pathlib import Path
 from configparser import ConfigParser
 from dataclasses import dataclass, asdict
 
@@ -38,46 +39,49 @@ def get_plugins(parser: ConfigParser) -> list[str]:
     # raise ConfigParseFailException("failed to get plugin-list, check your config file")
 
 
-def load_plugins(parser: ConfigParser) -> dict[str]:
+def load_plugins(parser: ConfigParser) -> dict[str, typing.Any]:
     """
     load plugins from config
     """
     plugins: dict[str, LoadPluginModule] = {}
-    # read config to get `path`
-    if d := parser["Extension"]:
-        path = d.get("path", "")
-    else:
-        path = ""
+
     # load modules
     for name in get_plugins(parser):
+        # read config to get `path`
+        path = parser.get("Extension", f"plugin_dir-{name}", fallback=None)
+        if path is None:
+            path = "{CONFIG_DIR}/%s" % name
+        # load module
         plugins[name] = load_plugin(path, name)
     return plugins
 
 
-def load_plugin_module(path: str, name: str, /, lock=Lock()) -> types.ModuleType:
+def load_plugin_module(path: str, name: str) -> types.ModuleType:
     """
     load plugin, then return the module
 
     :param name: name of plugin
     :param path: the value of [Extension.path] in config.
-    :param lock: the lock when modify sys.path.
     """
     path = path.format_map(PathMap)
     path = os.path.expanduser(path)
-    lock.acquire()
-    try:
-        if path and path not in sys.path:
-            sys.path.append(path)
-        module = importlib.import_module(f"{name}.{name}")
-    finally:
-        lock.release()
+
+    # https://docs.python.org/zh-cn/3/library/importlib.html#importing-a-source-file-directly
+    file_path = Path(path) / f"{name}.py"
+    module_name = name
+
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+
     return module
 
 
 @logger.important_function(print_parameters=["name"])
 def load_plugin(path: str, name: str):
     """
-    lead plugin
+    lead plugin and return LoadPluginModule object
 
     :return: LoadPluginModule
     """
@@ -261,7 +265,12 @@ def auto_execute_function(execute: typing.Callable, descriptions: list,
                           keyword_arguments: dict[str, typing.Any],
                           format_mapping=None) -> typing.Any:
     """
-    TODO
+    The function to execute functions from plugin. Like a decrypt function.
+    :param execute: the function to execute
+    :param descriptions: description list for the executable parameters, like: List[FunctionParameter]
+    :param keyword_arguments: keyword parameters for executable, may be updated with `format_mapping`
+    :param format_mapping: Optional, the namespace to update arguments with `.format_map` method.
+    :return: executable returned
     """
     call_kwargs: dict[str, dict]  # the dict finally pass to `exe`
     if not format_mapping:
@@ -301,12 +310,12 @@ def auto_execute_function(execute: typing.Callable, descriptions: list,
         # return the encrypted bytes
         return execute(**call_kwargs)
     except Exception as err:
-        raise PluginRuntimeError(f"error occured when executing {execute}") from err
+        raise PluginRuntimeError(f"error occurred when executing {execute}") from err
 
 
 class LoadPluginModule:
     """
-    The core functions to load plugin from moudle.
+    The core functions to load plugin from module.
     """
 
     def __init__(self, plugin_module: types.ModuleType,
@@ -366,7 +375,7 @@ class LoadPluginModule:
         """
         return self.get_encrypt_types()
 
-    def get_from_config(self, key, default_value=None):
+    def get_from_config(self, key, fallback=None):
         """
         get the value of `key` from config
         """
@@ -374,7 +383,7 @@ class LoadPluginModule:
             parser = get_parser_from_config()
         else:
             parser = self.parser
-        return parser[key] if key in parser.sections() else default_value
+        return parser[key] if key in parser.sections() else fallback
 
     def exec_encrypt(self, name, data: bytes, **kwargs) -> bytes:
         """
