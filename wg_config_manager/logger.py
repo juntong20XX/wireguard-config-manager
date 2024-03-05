@@ -18,7 +18,7 @@ class UILoggingHandle:
     def __init__(self, log_hook: typing.Optional[typing.Callable[[str, int, str, ..., ...], typing.Any]] = None):
         """
 
-        :param log_hook:
+        :param log_hook: UI log hook
         """
         self.log_hook = log_hook
 

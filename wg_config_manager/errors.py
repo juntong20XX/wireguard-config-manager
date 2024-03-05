@@ -1,5 +1,5 @@
 """
-Defautl exception.
+Default exceptions.
 """
 
 

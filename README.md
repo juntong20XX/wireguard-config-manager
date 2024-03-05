@@ -21,7 +21,9 @@ Open the config file at `${home}/.config/wg_config_manager/config.ini`. If file 
 
 In config.ini file, you can find `plugins = "v2ray"` in `[Extension]` part. Add your new plugin after that keyword, by using a comma (`,`) and using quotes around the plugin name, like `, "YOUR PLUGIN"`.
 
-Optional, you can set the plugin path by adding a key `plugin_dir-{YOUR PLUGIN}` , and the default paths `{CONFIG_DIR}/{PLUGIN NAME}`. Note that the value of `plugin dir` should be a dictionary, app will load `{plugin_dir}/{PLUGIN NAME}.py`. For example, you download a plugin named `plg`, and the plugin file `plg.py` is located at `~/.loacl/share/wgm/plg.py`, the path value be: `~/.loacl/share/wgm`.
+Optional, you can set the plugin path by adding a key `plugin_dir-{YOUR PLUGIN}` , and the default paths `{CONFIG_DIR}/{PLUGIN NAME}`. Note that the value of `plugin dir` should be a dictionary, app will load `{plugin_dir}/{PLUGIN NAME}.py`.
+
+For example, you download a plugin named `plg`, and the plugin file `plg.py` is located at `~/.loacl/share/wgm/plg.py`, the path value be: `~/.loacl/share/wgm`.
 
 ```ini
 [Extension]
@@ -160,6 +162,8 @@ The type is `set`, which holds the parameters that must be included to implement
 
 #### `LoadPluginModule`:
 
+TODO
+
 ### version
 
 Get the version string by `version.VERSION`.
@@ -185,4 +189,14 @@ post up =
 post down =
 MTU =
 ```
+
+### graphic_interface
+
+#### `Window`
+
+*Window* Object provides tree key frames.
+
+1. `Menu` on top, belongs to its master parameter.
+2. `Frame` on left to switch action items.
+3. `Frame` on right to display different action items.
 
