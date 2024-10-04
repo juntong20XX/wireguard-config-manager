@@ -12,19 +12,10 @@ class MenuListItem[_T]:
     dataclass to describe an item
 
     :param text: the label of menu, the text to display
-    :param next_action: the next action after item clicked, show next MenuListItem or call passed function
+    :param next_action: the next action after item clicked, call passed function
     """
     text: str
-    next_action: _T | Callable
-
-    def get_menu(self, master: tk.Menu) -> tk.Menu:
-        """
-        :param master: the master of returned object
-        :return: menu to display
-        """
-        ret = tk.Menu(master)
-        if isinstance(self.next_action, MenuListItem):
-            raise NotImplemented
+    next_action: Callable
 
 
 class Window(tk.Frame):
@@ -47,6 +38,7 @@ class Window(tk.Frame):
         # -- init object
         super().__init__(master, {} if cnf_window is None else cnf_window)
         self._menu_items: list[MenuListItem] = []
+        self.window_frames: list[tk.Frame] = []
 
         # -- setup frame on window
         # init
@@ -66,13 +58,46 @@ class Window(tk.Frame):
 
     def menu_item_append(self, item: MenuListItem):
         """
-
+        Add an item to the end of menu.
         :param item:
+        """
+        self.menu.add_command(label=item.text, command=item.next_action)
+        self._menu_items.append(item)
+
+    def menu_item_insert(self, index: int, item: MenuListItem):
+        """
+        Insert an item to menu.
+        :param index: index of the new item to be, starts with 0
+        :param item:
+        """
+        self._menu_items.insert(index, item)
+        self.menu.add_command(label=item.text, command=item.next_action)
+
+    def menu_item_pop(self, index: int):
+        """
+        pop the item at `index`
+        :param index: index of the item to be popped
+        """
+        item = self._menu_items.pop(index)
+        self.menu.deletecommand(item.text)
+
+    def menu_item_remove(self, remove: str | Callable | MenuListItem):
+        """
+
+        :param remove:
         :return:
         """
-        if isinstance(item.next_action, MenuListItem):
-            self.menu.add_cascade()
-        self._menu_items.append(item)
+        if isinstance(remove, MenuListItem):
+            index = self._menu_items.index(remove)
+            return self.menu_item_pop(index)
+        if isinstance(remove, str):
+            for index in range(len(self._menu_items)):
+                if self._menu_items[index].text == remove:
+                    return self.menu_item_pop(index)
+        for index in range(len(self._menu_items)):
+            if self._menu_items[index].next_action == remove:
+                return self.menu_item_pop(index)
+        raise KeyError(f"cannot found {remove} in menu list")
 
 
 def mainloop():
