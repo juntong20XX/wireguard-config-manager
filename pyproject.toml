@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "wg_config_manager"
 version = "0.0.1-alpha"
 authors = [
-  { name="juntong20XX", email="juntong_2021@outlook.com" },
+  { name="juntong20XX", email="ijuntong_2021@outlook.com" },
 ]
 description = "My wireguard config manager. Provide GUI to generate configurations for different devices. Support WireGuard and VLess."
 readme = "README.md"

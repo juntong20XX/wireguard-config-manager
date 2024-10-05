@@ -103,13 +103,17 @@ class FunctionParameter:
 class AcquireValue:
     """
     The keyword for `FunctionParameter.default`.
-    If `FunctionParameter.default` is instance of this class, 
+    If `FunctionParameter.default` is instance of this class,
     the value of default will be replaced with `mapping[arg]`.
     """
 
     def __init__(self, keyword: str):
         self.keyword = keyword
 
+
+# If this object put in parameter note of a service,
+# the module loader will pass the value returned from service "new" part to the function.
+ServiceSelfObject = FunctionParameter(name="self", default=AcquireValue("service self object"), user_accessible=False)
 
 _RE_SPL_VERSIONS = re.compile(r" *, *")
 _RE_GET_LOGIC = re.compile(r"^([<>]=?|!=|==)(\d.+)$")
@@ -231,16 +235,14 @@ def check_version_is_req_list(version_exp_list: typing.Iterable, version: str) -
     return all(check_version_is_req(i, v) for i in version_exp_list)
 
 
-_RE_GET_ENCRYPT_NAME = re.compile(r"^ENCRYPT_TYPE_(.+)$")
-
-
-def function_check_encrypt_type(plugin: types.ModuleType) -> dict[str, dict]:
+def loading_keyword_check(regular, plugin: types.ModuleType):
     """
-    Return the "name"-"data" mapping.
-
-    :raise: PluginLoadingException
+    Check the attributes' name from plugin, return the name-attribute mapping by names matched with regular expression.
+    :param regular: a compiled regular expression
+    :param plugin: types.ModuleType
+    :return:
     """
-    names = [(name, m.group(1)) for name in dir(plugin) if (m := _RE_GET_ENCRYPT_NAME.match(name))]
+    names = [(name, m.group(1)) for name in dir(plugin) if (m := regular.match(name))]
     ret = {}
     for n, name in names:
         data = getattr(plugin, n)
@@ -252,6 +254,30 @@ def function_check_encrypt_type(plugin: types.ModuleType) -> dict[str, dict]:
             continue
         ret[name] = data
     return ret
+
+
+_RE_GET_ENCRYPT_NAME = re.compile(r"^ENCRYPT_TYPE_(.+)$")
+
+
+def function_check_encrypt_type(plugin: types.ModuleType) -> dict[str, dict]:
+    """
+    Return the "name"-"data" mapping.
+
+    :raise: PluginLoadingException
+    """
+    return loading_keyword_check(_RE_GET_ENCRYPT_NAME, plugin)
+
+
+_RE_GET_SERVICE_NAME = re.compile(r"^ENCRYPT_TYPE_(.+)$")
+
+
+def function_check_background_service_type(plugin: types.ModuleType) -> dict[str, dict]:
+    """
+    Return the "name"-"data" mapping.
+
+    :raise: PluginLoadingException
+    """
+    return loading_keyword_check(_RE_GET_SERVICE_NAME, plugin)
 
 
 def check_minimum_plugin_varbs(plugin: types.ModuleType):
@@ -271,6 +297,7 @@ def auto_execute_function(execute: typing.Callable, descriptions: list,
     :param keyword_arguments: keyword parameters for executable, may be updated with `format_mapping`
     :param format_mapping: Optional, the namespace to update arguments with `.format_map` method.
     :return: executable returned
+    :raise: PluginLoadingException
     """
     call_kwargs: dict[str, dict]  # the dict finally pass to `exe`
     if not format_mapping:
@@ -313,6 +340,13 @@ def auto_execute_function(execute: typing.Callable, descriptions: list,
         raise PluginRuntimeError(f"error occurred when executing {execute}") from err
 
 
+@dataclass
+class Service:
+    has_constructor: bool
+    returned: typing.Any
+    server_name: str
+
+
 class LoadPluginModule:
     """
     The core functions to load plugin from module.
@@ -338,6 +372,8 @@ class LoadPluginModule:
             self.VERSION = VERSION
         # cache
         self._encrypt_functions = None
+        self._services_index_cache = None
+        self._service_dict: dict[str, Service] = {}
 
     def check_plugin_version_req(self):
         """
@@ -416,6 +452,73 @@ class LoadPluginModule:
         mapping.update(asdict(PathMap))
         mapping.update(self.get_from_config(self.plugin_name, {}))
         return auto_execute_function(exe, dec, kwargs, mapping)
+
+    def get_services(self):
+        """
+        Return the "name"-"data" mapping for services.
+        :return: Dict[str, dict]
+        """
+        if self._services_index_cache is not None:
+            return self._services_index_cache
+        # no cached
+        self._services_index_cache = function_check_background_service_type(self.plugin_module)
+        return self._services_index_cache
+
+    @logger.important_function(print_parameters=["service_name", "process_name"])
+    def run_service(self, service_name: str, process_name: str, **kwargs):
+        """
+        start a new `service_name` service, with name `process_name`.
+        :param service_name: the name of the service, e.g. "HELLO" for "BACKGROUND_SERVICE_HELLO".
+        :param process_name: the name of the process.
+        :param kwargs: keywords for new the service
+        :return: None
+        :raise: PluginRuntimeError. KeyError when process name already exists.
+        """
+        if process_name in self._service_dict:
+            raise KeyError("process name `{}` already exists".format(process_name))
+        service_info = self.get_services()[service_name]
+        if "new" in service_info:
+            # call the constructor
+            exe, dec = service_info["new"]
+            mapping = {}
+            mapping.update(asdict(PathMap))
+            mapping.update(self.get_from_config(self.plugin_name, {}))
+            obj = auto_execute_function(exe, dec, kwargs, mapping)
+            service = Service(True, obj, service_name)
+        else:
+            service = Service(False, None, service_name)
+        self._service_dict[service_name] = service
+
+    @logger.important_function(print_parameters=["name", "process_name"])
+    def call_service(self, name, process_name, **kwargs):
+        """
+        Call a running service `process_name` with function name `name`.
+        :return: None
+        """
+        service = self._service_dict[process_name]
+        if service.has_constructor:
+            mapping = {ServiceSelfObject.default.keyword: service.returned}
+        else:
+            mapping = {}
+        exc, dec = self.get_services()[service.server_name][name]
+        mapping.update(asdict(PathMap))
+        mapping.update(self.get_from_config(self.plugin_name, {}))
+        auto_execute_function(exc, dec, kwargs, mapping)
+
+    @logger.important_function(print_parameters=["process_name"])
+    def stop_service(self, service_name: str, **kwargs):
+        """
+        Stop a running service `service_name`.
+        :param service_name:
+        :param kwargs:
+        :return:
+        """
+        service = self._service_dict[service_name]
+        service_name = service.server_name
+        info = self.get_services()[service_name]
+        if "teardown" in info:
+            self.call_service("teardown", service_name, **kwargs)
+        self._service_dict.pop(service_name)
 
 
 def exec_plugin_module(plugin: types.ModuleType):

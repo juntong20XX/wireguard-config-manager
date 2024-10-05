@@ -10,7 +10,7 @@ from unittest import main, TestCase
 class TestLoadEncryptPlugin(TestCase):
     def setUp(self):
         self.config_exist = lp.PathMap.CONFIG_FILE.is_file()
-        self.loader = lp.load_plugin("{APP_DIR}", "gpg")
+        self.loader = lp.load_plugin("{APP_DIR}/gpg", "gpg")
         self.encrypt_functions = self.loader.get_encrypt_types()
 
     def test_get_encrypt_functions(self):
