@@ -170,16 +170,16 @@ class Logger:
 
     def _important_method(self, func, *, log_level, print_parameters):
         return type("important_method", (object,),
-                    {"__get__": self._important_method_get, "__function": staticmethod(func), "__log_level": log_level,
-                     "__print_parameters": print_parameters})()
+                    {"__get__": self._important_method_get,
+                     "function": staticmethod(func), "log_level": log_level, "print_parameters": print_parameters})()
 
     def _important_method_get(self, important_method_self, owner, owner_cls):
         wrap = functools.partial(self.method_called,
-                                 getattr(important_method_self, "__function"),
-                                 getattr(important_method_self, "__log_level"),
-                                 getattr(important_method_self, "__print_parameters"),
+                                 important_method_self.function,
+                                 important_method_self.log_level,
+                                 important_method_self.print_parameters,
                                  owner if owner is not None else owner_cls)
-        return functools.update_wrapper(wrap, getattr(important_method_self, "__function"))
+        return functools.update_wrapper(wrap, important_method_self.function)
 
     def method_called(self, __method, __log_level, __print_parameters, __self_or_cls, *args, **kwargs):
         """

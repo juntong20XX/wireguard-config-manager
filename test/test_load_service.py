@@ -5,7 +5,7 @@ Test plugin loader for background servers.
 from unittest import main, TestCase
 
 
-class TestLeadService(TestCase):
+class TestLoadService(TestCase):
     def setUp(self):
         from wg_config_manager.storage import PathMap
         PathMap.CONFIG_DIR = PathMap.APP_DIR / ".." / "data"

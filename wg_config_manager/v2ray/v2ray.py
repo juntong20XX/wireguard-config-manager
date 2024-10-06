@@ -32,6 +32,7 @@ class V2rayService:
 
     def down(self):
         self.process.kill()
+        self.process.wait()
         self.process = None
 
     def health_check(self):
