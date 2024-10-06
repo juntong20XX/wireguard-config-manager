@@ -268,7 +268,7 @@ def function_check_encrypt_type(plugin: types.ModuleType) -> dict[str, dict]:
     return loading_keyword_check(_RE_GET_ENCRYPT_NAME, plugin)
 
 
-_RE_GET_SERVICE_NAME = re.compile(r"^ENCRYPT_TYPE_(.+)$")
+_RE_GET_SERVICE_NAME = re.compile(r"^BACKGROUND_SERVICE_(.+)$")
 
 
 def function_check_background_service_type(plugin: types.ModuleType) -> dict[str, dict]:
@@ -294,7 +294,7 @@ def auto_execute_function(execute: typing.Callable, descriptions: list,
     The function to execute functions from plugin. Like a decrypt function.
     :param execute: the function to execute
     :param descriptions: description list for the executable parameters, like: List[FunctionParameter]
-    :param keyword_arguments: keyword parameters for executable, may be updated with `format_mapping`
+    :param keyword_arguments: keyword parameters for executable, cannot update with `format_mapping`
     :param format_mapping: Optional, the namespace to update arguments with `.format_map` method.
     :return: executable returned
     :raise: PluginLoadingException
@@ -464,14 +464,22 @@ class LoadPluginModule:
         self._services_index_cache = function_check_background_service_type(self.plugin_module)
         return self._services_index_cache
 
-    @logger.important_function(print_parameters=["service_name", "process_name"])
-    def run_service(self, service_name: str, process_name: str, **kwargs):
+    def get_service(self, process_name) -> Service:
+        """
+        get a current service object
+        :param process_name: the name of the service
+        :raise: KeyError
+        """
+        return self._service_dict[process_name]
+
+    @logger.important_method(print_parameters=["service_name", "process_name"])
+    def run_service(self, service_name: str, process_name: str, **kwargs) -> Service:
         """
         start a new `service_name` service, with name `process_name`.
         :param service_name: the name of the service, e.g. "HELLO" for "BACKGROUND_SERVICE_HELLO".
         :param process_name: the name of the process.
         :param kwargs: keywords for new the service
-        :return: None
+        :return: the service object
         :raise: PluginRuntimeError. KeyError when process name already exists.
         """
         if process_name in self._service_dict:
@@ -487,9 +495,10 @@ class LoadPluginModule:
             service = Service(True, obj, service_name)
         else:
             service = Service(False, None, service_name)
-        self._service_dict[service_name] = service
+        self._service_dict[process_name] = service
+        return service
 
-    @logger.important_function(print_parameters=["name", "process_name"])
+    @logger.important_method(print_parameters=["name", "process_name"])
     def call_service(self, name, process_name, **kwargs):
         """
         Call a running service `process_name` with function name `name`.
@@ -505,20 +514,20 @@ class LoadPluginModule:
         mapping.update(self.get_from_config(self.plugin_name, {}))
         auto_execute_function(exc, dec, kwargs, mapping)
 
-    @logger.important_function(print_parameters=["process_name"])
-    def stop_service(self, service_name: str, **kwargs):
+    @logger.important_method(print_parameters=["process_name"])
+    def stop_service(self, process_name: str, **kwargs):
         """
         Stop a running service `service_name`.
-        :param service_name:
+        :param process_name:
         :param kwargs:
         :return:
         """
-        service = self._service_dict[service_name]
+        service = self._service_dict[process_name]
         service_name = service.server_name
         info = self.get_services()[service_name]
         if "teardown" in info:
-            self.call_service("teardown", service_name, **kwargs)
-        self._service_dict.pop(service_name)
+            self.call_service("teardown", process_name, **kwargs)
+        self._service_dict.pop(process_name)
 
 
 def exec_plugin_module(plugin: types.ModuleType):
