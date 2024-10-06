@@ -95,7 +95,7 @@ Here are the steps to add a new encrypt type:
    parameters = [
        FunctionParameter(name="target",
                          default=AcquireValue("TARGET DATA"),
-                         docs="path to data file",
+                         helper="path to data file",
                          user_accessible=False),
        FunctionParameter(name="xor_keyword",
                          default="password", 
@@ -163,7 +163,7 @@ Background service is a good way to keep a  subprocess alive, because the object
    
    parameter_config_path = FunctionParameter(name="config_path",
                                              default="{APP_DIR}/config.json",
-                                             docs="path to the v2ray configuration")
+                                             helper="path to the v2ray configuration")
    
    BACKGROUND_SERVICE_v2ray = {"new": [V2rayService, [ServiceSelfObject, parameter_config_path]],
                                "teardown": [V2rayService.down, [ServiceSelfObject]]}
@@ -245,7 +245,13 @@ MTU =
 
 ### logger
 
+`logger.py` provides a useful Logger.
 
+#### `Logger`
+
+Class `logger.Logger` can be used like python module `logging`.
+
+Attributes:
 
 ### command_line_interface
 
