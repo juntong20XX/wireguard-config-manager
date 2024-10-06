@@ -98,6 +98,7 @@ class Logger:
         Return a wrapper to register the function as an important function.
         `logger.before_function_called` and `logger.logger_after_function_called` will be auto called.
         Logger will auto log it when you call the function.
+        Warning: it not works for a class method.
         :param log_level: log level
         :param print_parameters: the parameters to print, if not found, set `"NOT FOUND!"`
         """
@@ -156,3 +157,83 @@ class Logger:
         """
         func_name = func.__name__ if hasattr(func, "__name__") else getattr(type(func), "__name__", "UNKNOWN")
         self.logger.log(log_level, 'function "%s" exited, returned %s', func_name, returned)
+
+    def important_method(self, log_level: int = logging.INFO,
+                         print_parameters: typing.Optional[typing.Iterable[str]] = None):
+        """
+
+        :param log_level:
+        :param print_parameters:
+        """
+        return functools.partial(self._important_method,
+                                 log_level=log_level, print_parameters=print_parameters)
+
+    def _important_method(self, func, *, log_level, print_parameters):
+        return type("important_method", (object,),
+                    {"__get__": self._important_method_get, "__function": staticmethod(func), "__log_level": log_level,
+                     "__print_parameters": print_parameters})()
+
+    def _important_method_get(self, important_method_self, owner, owner_cls):
+        wrap = functools.partial(self.method_called,
+                                 getattr(important_method_self, "__function"),
+                                 getattr(important_method_self, "__log_level"),
+                                 getattr(important_method_self, "__print_parameters"),
+                                 owner if owner is not None else owner_cls)
+        return functools.update_wrapper(wrap, getattr(important_method_self, "__function"))
+
+    def method_called(self, __method, __log_level, __print_parameters, __self_or_cls, *args, **kwargs):
+        """
+        Called when the important function be called.
+        """
+        self.before_method_called(__method, args, kwargs, self_or_cls=__self_or_cls, log_level=__log_level,
+                                  print_parameters=__print_parameters)
+        try:
+            ret = __method(__self_or_cls, *args, **kwargs)
+        except Exception as err:
+            self.logger.error(format(err))
+            raise err
+        else:
+            self.after_method_called(__method, ret, __log_level)
+            return ret
+
+    def before_method_called(self, func, func_args: tuple, func_kwargs: dict[str, typing.Any],
+                             self_or_cls, log_level: int = logging.INFO,
+                             print_parameters: typing.Optional[typing.Iterable[str]] = None):
+        """
+        The function called before an important method called.
+        :param func: The wrapped important method.
+        :param func_args: function positional arguments
+        :param func_kwargs: function keyword arguments
+        :param self_or_cls: self or cls
+        :param log_level: log level
+        :param print_parameters: the parameters to print, if not found, set `"NOT FOUND!"`
+        :return: None
+        """
+        method_name = func.__name__ if hasattr(func, "__name__") else getattr(type(func), "__name__", "UNKNOWN")
+        if not print_parameters:
+            self.logger.log(log_level, 'call method "%s"', method_name)
+            return
+        # update log message with parameters
+        f = 'call method "%s", with ' + "=%s, ".join(print_parameters)
+        ls = []
+        key_args = dict(zip(func.__annotations__.keys(), func_args))
+        key_args.update(func_kwargs)
+        if type(self_or_cls) is type:
+            key_args["cls"] = self_or_cls
+        else:
+            key_args["self"] = self_or_cls
+        # full message
+        for name in print_parameters:
+            if name in key_args:
+                ls.append(key_args[name])
+            else:
+                ls.append('"NOT FOUND!"')
+        self.logger.log(log_level, f, method_name, *ls)
+
+    def after_method_called(self, func, returned, log_level: int):
+        """
+        The function called after an important method called.
+        """
+        func = func.__get__
+        func_name = func.__name__ if hasattr(func, "__name__") else getattr(type(func), "__name__", "UNKNOWN")
+        self.logger.log(log_level, 'method "%s" exited, returned %s', func_name, returned)
